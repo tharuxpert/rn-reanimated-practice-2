@@ -1,101 +1,68 @@
-import React from "react";
-import { Dimensions, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Gesture,
-  GestureDetector,
-  GestureHandlerRootView,
-} from "react-native-gesture-handler";
-import Animated, {
-  SharedValue,
-  useAnimatedStyle,
-  useDerivedValue,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Animated, { FadeIn, FadeOut, Layout } from "react-native-reanimated";
 
-interface AnimatedPosition {
-  x: SharedValue<number>;
-  y: SharedValue<number>;
+const LIST_ITEM_COLOR = "#1798DE";
+
+interface Item {
+  id: number;
 }
 
-const SCREEN_WIDTH = Dimensions.get("window").width;
-
-const useFollowAnimatedPosition = ({ x, y }: AnimatedPosition) => {
-  const followX = useDerivedValue(() => {
-    return withSpring(x.value);
-  });
-
-  const followY = useDerivedValue(() => {
-    return withSpring(y.value);
-  });
-
-  const rStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateX: followX.value }, { translateY: followY.value }],
-    };
-  });
-
-  return { followX, followY, rStyle };
-};
-
 export default function App() {
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
+  const initialMode = useRef<boolean>(true);
 
-  const context = useSharedValue({ x: 0, y: 0 });
+  useEffect(() => {
+    initialMode.current = false;
+  }, []);
 
-  const gesture = Gesture.Pan()
-    .onStart(() => {
-      context.value = { x: translateX.value, y: translateY.value };
-    })
-    .onUpdate((event) => {
-      translateX.value = event.translationX + context.value.x;
-      translateY.value = event.translationY + context.value.y;
-    }).onEnd(() => {
-      if (translateX.value > SCREEN_WIDTH / 2) {
-        translateX.value = SCREEN_WIDTH - 80;
-      } else {
-        translateX.value = 0
-      }
-    })
+  const [items, setItems] = useState<Item[]>(
+    new Array(5).fill(0).map((_, index) => ({ id: index }))
+  );
 
-  const {
-    followX: blueFollowX,
-    followY: blueFollowY,
-    rStyle: rBlueCircleStyle,
-  } = useFollowAnimatedPosition({
-    x: translateX,
-    y: translateY,
-  });
+  const onAdd = useCallback(() => {
+    setItems((currentItems) => {
+      const nextItemId = (currentItems[currentItems.length - 1]?.id ?? 0) + 1;
+      return [...currentItems, { id: nextItemId }];
+    });
+  }, []);
 
-  const {
-    followX: redFollowX,
-    followY: redFollowY,
-    rStyle: rRedCircleStyle,
-  } = useFollowAnimatedPosition({
-    x: blueFollowX,
-    y: blueFollowY,
-  });
-
-  const {rStyle:rGreenCircleStyle } = useFollowAnimatedPosition({
-    x: redFollowX,
-    y: redFollowY,
-  });
+  const onDelete = useCallback((itemId: number) => {
+    setItems((currentItems) => {
+      return currentItems.filter((item) => item.id !== itemId);
+    });
+  }, []);
 
   return (
-    <GestureHandlerRootView>
-      <View style={styles.container}>
-        <Animated.View
-          style={[styles.circle, { backgroundColor: "red" }, rRedCircleStyle]}
-        />
-        <Animated.View
-          style={[styles.circle, { backgroundColor: "green" }, rGreenCircleStyle]}
-        />
-        <GestureDetector gesture={gesture}>
-          <Animated.View style={[styles.circle, rBlueCircleStyle]} />
-        </GestureDetector>
-      </View>
-    </GestureHandlerRootView>
+    <View style={styles.container}>
+      <TouchableOpacity onPress={onAdd} style={styles.floatingButton}>
+        <Text style={{ color: "white", fontSize: 50 }}>+</Text>
+      </TouchableOpacity>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingVertical: 50 }}
+      >
+        {items.map((item, index) => {
+          return (
+            <Animated.View
+              key={item.id}
+              style={styles.listItem}
+              entering={
+                initialMode.current ? FadeIn.delay(100 * index) : FadeIn
+              }
+              exiting={FadeOut}
+              onTouchEnd={() => onDelete(item.id)}
+              layout={Layout.delay(100)}
+            />
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -104,12 +71,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
-  circle: {
-    position: "absolute",
-    height: 80,
+  listItem: {
+    height: 100,
+    backgroundColor: LIST_ITEM_COLOR,
+    width: "90%",
+    marginVertical: 10,
+    borderRadius: 20,
+    alignSelf: "center",
+    elevation: 15,
+  },
+  floatingButton: {
+    width: 80,
     aspectRatio: 1,
-    backgroundColor: "blue",
+    backgroundColor: "black",
     borderRadius: 40,
-    opacity: 0.8,
+    position: "absolute",
+    bottom: 50,
+    right: "5%",
+    zIndex: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
