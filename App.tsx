@@ -1,95 +1,90 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useMemo } from "react";
+import { StatusBar } from "expo-status-bar";
+import { useWindowDimensions } from "react-native";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import Animated, { FadeIn, FadeOut, Layout } from "react-native-reanimated";
+  Blur,
+  Canvas,
+  Circle,
+  ColorMatrix,
+  Group,
+  Paint,
+  SweepGradient,
+  vec,
+} from "@shopify/react-native-skia";
+import { useSharedValue, withSpring } from "react-native-reanimated";
+import Touchable, { useGestureHandler } from "react-native-skia-gesture";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-const LIST_ITEM_COLOR = "#1798DE";
+const RADIUS = 80;
 
-interface Item {
-  id: number;
-}
+function App() {
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
-export default function App() {
-  const initialMode = useRef<boolean>(true);
+  const cx = useSharedValue(windowWidth / 2);
+  const cy = useSharedValue(windowHeight / 2);
 
-  useEffect(() => {
-    initialMode.current = false;
-  }, []);
+  const context = useSharedValue({
+    x: 0,
+    y: 0,
+  });
 
-  const [items, setItems] = useState<Item[]>(
-    new Array(5).fill(0).map((_, index) => ({ id: index }))
-  );
+  const gestureHandler = useGestureHandler({
+    onStart: () => {
+      "worklet";
+      context.value = {
+        x: cx.value,
+        y: cy.value,
+      };
+    },
+    onActive: ({ translationX, translationY }) => {
+      "worklet";
+      cx.value = translationX + context.value.x;
+      cy.value = translationY + context.value.y;
+    },
+    onEnd: () => {
+      "worklet";
+      cx.value = withSpring(windowWidth / 2);
+      cy.value = withSpring(windowHeight / 2);
+    },
+  });
 
-  const onAdd = useCallback(() => {
-    setItems((currentItems) => {
-      const nextItemId = (currentItems[currentItems.length - 1]?.id ?? 0) + 1;
-      return [...currentItems, { id: nextItemId }];
-    });
-  }, []);
-
-  const onDelete = useCallback((itemId: number) => {
-    setItems((currentItems) => {
-      return currentItems.filter((item) => item.id !== itemId);
-    });
+  const layer = useMemo(() => {
+    return (
+      <Paint>
+        <Blur blur={30} />
+        <ColorMatrix
+          matrix={[
+            // R, G, B, A, Bias (Offset)
+            // prettier-ignore
+            1, 0, 0, 0, 0,
+            // prettier-ignore
+            0, 1, 0, 0, 0,
+            // prettier-ignore
+            0, 0, 1, 0, 0,
+            // prettier-ignore
+            0, 0, 0, 60, -30,
+          ]}
+        />
+      </Paint>
+    );
   }, []);
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={onAdd} style={styles.floatingButton}>
-        <Text style={{ color: "white", fontSize: 50 }}>+</Text>
-      </TouchableOpacity>
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingVertical: 50 }}
-      >
-        {items.map((item, index) => {
-          return (
-            <Animated.View
-              key={item.id}
-              style={styles.listItem}
-              entering={
-                initialMode.current ? FadeIn.delay(100 * index) : FadeIn
-              }
-              exiting={FadeOut}
-              onTouchEnd={() => onDelete(item.id)}
-              layout={Layout.delay(100)}
-            />
-          );
-        })}
-      </ScrollView>
-    </View>
+    <Touchable.Canvas style={{ flex: 1, backgroundColor: "#111" }}>
+      <Group layer={layer}>
+        <Touchable.Circle {...gestureHandler} cx={cx} cy={cy} r={RADIUS} />
+        <Circle cx={windowWidth / 2} cy={windowHeight / 2} r={RADIUS} />
+        <SweepGradient c={vec(0, 0)} colors={["cyan", "magenta", "cyan"]} />
+      </Group>
+    </Touchable.Canvas>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  listItem: {
-    height: 100,
-    backgroundColor: LIST_ITEM_COLOR,
-    width: "90%",
-    marginVertical: 10,
-    borderRadius: 20,
-    alignSelf: "center",
-    elevation: 15,
-  },
-  floatingButton: {
-    width: 80,
-    aspectRatio: 1,
-    backgroundColor: "black",
-    borderRadius: 40,
-    position: "absolute",
-    bottom: 50,
-    right: "5%",
-    zIndex: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+export default () => {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <App />
+      <StatusBar style="light" />
+    </GestureHandlerRootView>
+  );
+};
