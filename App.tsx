@@ -1,35 +1,26 @@
-import React from "react";
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
-import { CircularCarousel } from "./components/circular-carousel";
+import { useEffect, useState } from "react";
+import * as Font from "expo-font";
 
-const data = [
-  require("./assets/images/00.jpg"),
-  require("./assets/images/01.jpg"),
-  require("./assets/images/02.jpg"),
-  require("./assets/images/03.jpg"),
-  require("./assets/images/04.jpg"),
-  require("./assets/images/05.jpg"),
-  require("./assets/images/06.jpg"),
-  require("./assets/images/07.jpg"),
-  require("./assets/images/08.jpg"),
-  require("./assets/images/09.jpg"),
-];
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import sfCompactRoundedMedium from "./assets/fonts/SF-Compact-Rounded-Medium.otf"; // medium
+import { App } from "./src";
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <StatusBar style="auto" />
-      <CircularCarousel data={data} />
-    </View>
-  );
-}
+const AppContainer = () => {
+  const [fontsLoaded, setFontsLoaded] = useState(false);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});
+  // Load custom fonts using async Font.loadAsync
+  useEffect(() => {
+    (async () => {
+      await Font.loadAsync({
+        "SF-Compact-Rounded-Medium": sfCompactRoundedMedium, // medium
+      });
+      setFontsLoaded(true);
+    })();
+  }, []);
+
+  return <>{fontsLoaded && <App />}</>;
+};
+
+// eslint-disable-next-line import/no-default-export
+export default AppContainer;
