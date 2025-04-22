@@ -1,26 +1,35 @@
+import {
+  gestureHandlerRootHOC,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
 import { useEffect, useState } from "react";
 import * as Font from "expo-font";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import sfCompactRoundedMedium from "./assets/fonts/SF-Compact-Rounded-Medium.otf"; // medium
-import { App } from "./src";
+import App from "./src";
 
 const AppContainer = () => {
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
-  // Load custom fonts using async Font.loadAsync
   useEffect(() => {
-    (async () => {
-      await Font.loadAsync({
-        "SF-Compact-Rounded-Medium": sfCompactRoundedMedium, // medium
+    (() => {
+      Font.loadAsync({
+        "FiraCode-Regular": require("./assets/fonts/FiraCode-Regular.ttf"),
+      }).then(() => {
+        setFontsLoaded(true);
       });
-      setFontsLoaded(true);
     })();
   }, []);
 
-  return <>{fontsLoaded && <App />}</>;
+  if (!fontsLoaded) {
+    return null;
+  }
+
+  return (
+    <GestureHandlerRootView>
+      <App />
+    </GestureHandlerRootView>
+  );
 };
 
 // eslint-disable-next-line import/no-default-export
-export default AppContainer;
+export default gestureHandlerRootHOC(AppContainer);

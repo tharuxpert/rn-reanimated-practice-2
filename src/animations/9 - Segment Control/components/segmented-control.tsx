@@ -6,7 +6,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { Palette } from "../../constants";
+import { Palette } from "../src/constants";
 import Animated, {
   useAnimatedStyle,
   withTiming,
