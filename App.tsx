@@ -1,35 +1,17 @@
-import {
-  gestureHandlerRootHOC,
-  GestureHandlerRootView,
-} from "react-native-gesture-handler";
-import { useEffect, useState } from "react";
-import * as Font from "expo-font";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import App from "./src";
+import { App } from "./src";
+import { FontsProvider } from "./src/providers/fonts-provider";
 
 const AppContainer = () => {
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-
-  useEffect(() => {
-    (() => {
-      Font.loadAsync({
-        "FiraCode-Regular": require("./assets/fonts/FiraCode-Regular.ttf"),
-      }).then(() => {
-        setFontsLoaded(true);
-      });
-    })();
-  }, []);
-
-  if (!fontsLoaded) {
-    return null;
-  }
-
   return (
-    <GestureHandlerRootView>
-      <App />
-    </GestureHandlerRootView>
+    <FontsProvider>
+      <SafeAreaProvider>
+        <App />
+      </SafeAreaProvider>
+    </FontsProvider>
   );
 };
 
 // eslint-disable-next-line import/no-default-export
-export default gestureHandlerRootHOC(AppContainer);
+export default AppContainer;
